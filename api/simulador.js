@@ -15,6 +15,15 @@ export default function handler(req, res) {
   const queryParams = req.query;
   let payload = null;
 
+  // filtra headers adicionados pelo Vercel
+  const headersOriginais = {};
+  for (const [chave, valor] of Object.entries(headers)) {
+    if (!chave.startsWith("x-vercel") && !chave.startsWith("x-forwarded")) {
+      headersOriginais[chave] = valor;
+    }
+  }
+
+  // captura payload
   try {
     payload = req.body ? req.body : null;
   } catch (e) {
@@ -23,6 +32,7 @@ export default function handler(req, res) {
 
   res.status(200).json({
     metodoRecebido: metodo,
+    headersOriginais: headersOriginais,
     headersRecebidos: headers,
     queryParamsRecebidos: queryParams,
     payloadRecebido: payload,
