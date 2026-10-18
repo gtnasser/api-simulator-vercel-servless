@@ -11,6 +11,22 @@
             font-size: .75rem;
         }
 
+        textarea { 
+            width: 100%; height: 100px; 
+        }
+        pre { 
+            background: #f4f4f4; 
+            border: 1px solid #ccc; 
+            padding: 10px; 
+            min-height: 100px; 
+        }
+        code { 
+            background: #f4f4f4; 
+            border: 1px solid #ccc; 
+        }
+
+        /* toolbar */ 
+
         .form-container {
             display: flex;
             justify-content: flex-start; /* alinha à esquerda */
@@ -45,27 +61,58 @@
             background-color: #007BFF;
         }
 
-        textarea { 
-            width: 100%; height: 100px; 
+        /* overlay spinner */
+
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5); /* fundo opaco */
+            display: none; /* escondido por padrão */
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
         }
-        pre { 
-            background: #f4f4f4; 
-            border: 1px solid #ccc; 
-            padding: 10px; 
-            min-height: 100px; 
+
+        #overlay .spinner {
+            width: 50px;
+            height: 50px;
+            border: 6px solid #fff;
+            border-top: 6px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
-        code { 
-            background: #f4f4f4; 
-            border: 1px solid #ccc; 
+
+        #overlay .message {
+            margin-left: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
         }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+
     </style>
 </head>
 
 <body>
+
+    <!-- Overlay -->
+
+    <div id="overlay">
+        <div class="spinner"></div>
+        <div class="message">Aguarde. Processando...</div>
+    </div>
+    
     <h1>HTTP Request Simulator</h1>
 
-
-
+    <!-- Toolbar -->
 
     <div class="form-container">
 
@@ -94,11 +141,6 @@
             </div>
         </div>
 
-        <!--div class="form-item">
-            <label>URL da API:</label>
-            <input type="text" id="apiUrl" value="https://api-simulator-vercel-servless.vercel.app/api/simulador" style="width: 500px;">
-        </div-->
-
         <button onclick="doRequest()">Enviar Requisição</button>
 
         <span>Exemplos:</span>
@@ -108,7 +150,10 @@
         <button onclick="exemploPATCH()">PATCH</button>
         <button onclick="exemploDELETE()">DELETE</button>
 
+        <button id="teste">teste</button>
     </div>
+
+    <!-- content -->
 
     <div id="body" style="display: none;">
         <h4>Payload (JSON):</h4>
@@ -122,9 +167,10 @@
     <pre id="response"></pre>
 
     <script>
-        let url = document.getElementById("apiUrl").value;
 
         async function doRequest() {
+
+            // prepare data
             let url = document.getElementById("apiUrl").value;
             document.getElementById("request").textContent = "";
             document.getElementById("response").textContent = "";
@@ -147,13 +193,17 @@
             }
             document.getElementById("request").textContent = `url=${url}\n` + JSON.stringify(option, null, 2);
 
+            // do fetch
             try {
+                const overlay = document.getElementById("overlay");
+                overlay.style.display = "flex";
                 const resposta = await fetch(url, option);
                 const dados = await resposta.json();
                 document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
             } catch(e) {
                 document.getElementById("response").textContent = e;
-
+            } finally {
+                overlay.style.display = "none";
             }
 
         }
@@ -161,20 +211,44 @@
 
         // GET
         async function exemploGET() {
-            let url2 = url + "?name=John&age=30";
+            let url = document.getElementById("apiUrl").value + "?name=John&age=30";
             const option = {
                 method: "GET",
             }
-            document.getElementById("request").textContent = `url=${url2}\n` + JSON.stringify(option, null, 2);
+            document.getElementById("request").textContent = `url=${url}\n` + JSON.stringify(option, null, 2);
             document.getElementById("response").textContent = "";
 
-            const resposta = await fetch(url2, option);
-            const dados = await resposta.json();
-            document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
+            try {
+                const overlay = document.getElementById("overlay");
+                spinnerTimeout = setTimeout(() => {
+                    // só mostra spinner se demorar mais de 300ms
+                    overlay.style.display = "flex";
+                }, 300);
+                const resposta = await fetch(url, option);
+                const dados = await resposta.json();
+                document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
+                
+            } catch(e) {
+                document.getElementById("response").textContent = e;
+            } finally {
+                clearTimeout(spinnerTimeout);
+                overlay.style.display = "none";
+            }
         }
+
+        // fetch
+        // 🔎 1. Erros de rede (exceção no fetch)
+        // Quando o navegador não consegue nem estabelecer a conexão (DNS não resolvido, servidor inacessível, 
+        // bloqueio de CORS, etc.), o fetch lança uma exceção genérica: "TypeError: Failed to fetch".
+        // 🔎 2. Erros de HTTP (resposta do servidor)
+        // Se a conexão foi feita e o servidor respondeu, mesmo que seja um erro (404, 500, etc.), o fetch não 
+        // lança exceção, ele retorna normalmente um objeto Response, é necessário verificar resposta.ok ou 
+        // resposta.status para saber se deu erro.
+
 
         // POST com corpo JSON
         async function exemploPOST() {
+            let url = document.getElementById("apiUrl").value;
             const option = {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -183,55 +257,93 @@
             document.getElementById("request").textContent = JSON.stringify(option, null, 2);
             document.getElementById("response").textContent = "";
 
-            const resposta = await fetch(url, option);
-            const dados = await resposta.json();
-            document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
+            try {
+                const overlay = document.getElementById("overlay");
+                overlay.style.display = "flex";
+                const resposta = await fetch(url, option);
+                const dados = await resposta.json();
+                if (resposta.ok) {
+                    document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
+                } else {
+                    // Erro HTTP (ex: 404, 500)
+                    document.getElementById("response").textContent = `HTTP ${resposta.status} ${resposta.statusText}`;
+                }
+            } catch(e) {
+                // geralmente falha de rede
+                document.getElementById("response").textContent = e;
+            } finally {
+                overlay.style.display = "none";
+            }
         }
 
         // PUT para atualizar recurso
         async function exemploPUT() {
-            let url2 = url + "/123";
+            let url = document.getElementById("apiUrl").value + "/123";
             const option = {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ "id": 1, "status": "Enabled" })
             }
-            document.getElementById("request").textContent = `url=${url2}\n` + JSON.stringify(option, null, 2);
+            document.getElementById("request").textContent = `url=${url}\n` + JSON.stringify(option, null, 2);
             document.getElementById("response").textContent = "";
 
-            const resposta = await fetch(url2, option);
-            const dados = await resposta.json();
-            document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
+            try {
+                const overlay = document.getElementById("overlay");
+                overlay.style.display = "flex";
+                const resposta = await fetch(url, option);
+                const dados = await resposta.json();
+                document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
+            } catch(e) {
+                document.getElementById("response").textContent = e;
+            } finally {
+                overlay.style.display = "none";
+            }
         }
 
         // PATCH para atualizar parcialmente
         async function exemploPATCH() {
-            let url2 = url + "/123";
+            let url = document.getElementById("apiUrl").value + "/123";
             const option = {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify( { "name": "name changed to Jack" })
             }
-            document.getElementById("request").textContent = `url=${url2}\n` + JSON.stringify(option, null, 2);
+            document.getElementById("request").textContent = `url=${url}\n` + JSON.stringify(option, null, 2);
             document.getElementById("response").textContent = "";
 
-            const resposta = await fetch(url2, option);
-            const dados = await resposta.json();
-            document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
+            try {
+                const overlay = document.getElementById("overlay");
+                overlay.style.display = "flex";
+                const resposta = await fetch(url, option);
+                const dados = await resposta.json();
+                document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
+            } catch(e) {
+                document.getElementById("response").textContent = e;
+            } finally {
+                overlay.style.display = "none";
+            }
         }
 
         // DELETE para remover recurso
         async function exemploDELETE() {
-            let url2 = url + "/123";
+            let url = document.getElementById("apiUrl").value + "/123";
             const option = {
                 method: "DELETE",
             }
-            document.getElementById("request").textContent = `url=${url2}\n` + JSON.stringify(option, null, 2);
+            document.getElementById("request").textContent = `url=${url}\n` + JSON.stringify(option, null, 2);
             document.getElementById("response").textContent = "";
 
-            const resposta = await fetch(url2, option);
-            const dados = await resposta.json();
-            document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
+            try {
+                const overlay = document.getElementById("overlay");
+                overlay.style.display = "flex";
+                const resposta = await fetch(url, option);
+                const dados = await resposta.json();
+                document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
+            } catch(e) {
+                document.getElementById("response").textContent = e;
+            } finally {
+                overlay.style.display = "none";
+            }
         }
 
         // evento quando seleciona um novo metodo
@@ -244,7 +356,28 @@
             }
         });
 
-</script>
+        // overlay spinner
+
+        const btn = document.getElementById("teste");
+        const overlay = document.getElementById("overlay");
+
+        btn.addEventListener("click", async () => {
+            // Mostra overlay
+            overlay.style.display = "flex";
+
+            try {
+                // Simula requisição (2 segundos)
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            } catch (err) {
+                alert("Erro na requisição!");
+            } finally {
+
+            // Esconde overlay
+            overlay.style.display = "none";
+            }
+        });
+
+    </script>
 
     <br><br><hr><br><br>
 
