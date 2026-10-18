@@ -3,117 +3,240 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Teste API Simulada</title>
+    <title>HTTP Request</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        input, textarea, select, button { margin: 5px 0; padding: 5px; }
-        textarea { width: 100%; height: 100px; }
-        pre { background: #f4f4f4; padding: 10px; border: 1px solid #ccc; }
+        body {
+            font-family: Arial, sans-serif; 
+            margin: 10px; 
+            font-size: .75rem;
+        }
+
+        .form-container {
+            display: flex;
+            justify-content: flex-start; /* alinha à esquerda */
+            align-items:center;
+            gap: 10px;
+            padding: 10px 0;
+        }
+
+        .form-item {
+            display: flex;
+            flex-direction: column; /* para label acima do elemento */
+        }
+
+        label {
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        select, input, th, td {
+            padding: 4px;
+        }
+
+        .form-container button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #0056b3;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .form-container button button:hover {
+            background-color: #007BFF;
+        }
+
+        textarea { 
+            width: 100%; height: 100px; 
+        }
+        pre { 
+            background: #f4f4f4; 
+            border: 1px solid #ccc; 
+            padding: 10px; 
+            min-height: 100px; 
+        }
+        code { 
+            background: #f4f4f4; 
+            border: 1px solid #ccc; 
+        }
     </style>
 </head>
 
 <body>
-    <h1>Teste da API Simulada</h1>
+    <h1>HTTP Request Simulator</h1>
 
-    <button onclick="testarAPI()">Enviar Requisição</button>
-    <pre id="saida"></pre>
+    <div class="form-container">
 
-    <script>
-        async function testarAPI() {
-            const resposta = await fetch("/api/simulador", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ mensagem: "Olá Vercel!" })
-            });
-            const dados = await resposta.json();
-            document.getElementById("saida").textContent =
-                JSON.stringify(dados, null, 2);
-        }
-    </script>
+        <div class="form-item">
+            <label for="method">Método HTTP:</label>
+            <select id="method">
+                <option>GET</option>
+                <option>POST</option>
+                <option>PUT</option>
+                <option>PATCH</option>
+                <option>DELETE</option>
+                <option>HEAD</option>
+                <option>OPTIONS</option>
+            </select>        
+        </div>
 
-    <br><br><hr><br><br>
+        <div class="form-item">
+            <label>URL da API:</label>
+            <input type="text" id="apiUrl" value="https://api-simulator-vercel-servless.vercel.app/api/simulador" style="width: 300px;">
+        </div>
 
-    <label>Método HTTP:</label>
-    <select id="method">
-        <option>GET</option>
-        <option>POST</option>
-        <option>PUT</option>
-        <option>DELETE</option>
-    </select>
+        <button onclick="doRequest()">Enviar Requisição</button>
+
+        <span>Exemplos:</span>
+        <button onclick="exemploGET()">GET</button>
+        <button onclick="exemploPOST()">POST</button>
+        <button onclick="exemploPUT()">PUT</button>
+        <button onclick="exemploPATCH()">PATCH</button>
+        <button onclick="exemploDELETE()">DELETE</button>
+
+    </div>
+
+    <h4>Request:</h4>
+    <pre id="request"></pre>
+
+    <h4>Response:</h4>
+    <pre id="response"></pre>
+
+    <hr>
 
     <br><br>
+
     <label>Payload (JSON):</label>
     <textarea id="payload">{ "mensagem": "Olá API" }</textarea>
 
-    <br><br>
-    <button onclick="simulateRequest()">Enviar Requisição</button>
-
-    <h2>Resposta da API simulada:</h2>
-    <pre id="response"></pre>
-
     <script>
-        function simulateRequest() {
+        const url = document.getElementById("apiUrl").value;
+
+        async function doRequest() {
             const method = document.getElementById("method").value;
             const payloadText = document.getElementById("payload").value;
             let payloadObj = null;
-
             try {
                 payloadObj = payloadText ? JSON.parse(payloadText) : null;
             } catch (e) {
                 payloadObj = { erro: "Payload inválido, não é JSON válido." };
             }
 
-            const simulatedResponse = {
-                metodoRecebido: method,
-                headersRecebidos: {
-                    "Content-Type": "application/json",
-                    "User-Agent": navigator.userAgent,
-                    "Idioma": navigator.language
-                },
-                payloadRecebido: payloadObj,
-                timestamp: new Date().toISOString()
-            };
+            const option = {
+                method: method,
+                headers: { "Content-Type": "application/json" },
+            }
+            if (!['GET','HEAD'].includes(method)) {
+                option["body"] = JSON.stringify(payloadText);
+            }
+            document.getElementById("request").textContent = JSON.stringify(option, null, 2);
+            document.getElementById("response").textContent = "";
 
-            document.getElementById("response").textContent =
-                JSON.stringify(simulatedResponse, null, 2);
+            const resposta = await fetch(url, option);
+            const dados = await resposta.json();
+            document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
+
         }
-    </script>
 
+
+        // GET
+        async function exemploGET() {
+            let url2 = url + "?name=John&age=30";
+            const option = {
+                method: "GET",
+            }
+            document.getElementById("request").textContent = `url=${url2}\n` + JSON.stringify(option, null, 2);
+            document.getElementById("response").textContent = "";
+
+            const resposta = await fetch(url2, option);
+            const dados = await resposta.json();
+            document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
+        }
+
+        // POST com corpo JSON
+        async function exemploPOST() {
+            const option = {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: "Hello World!" })
+            }
+            document.getElementById("request").textContent = JSON.stringify(option, null, 2);
+            document.getElementById("response").textContent = "";
+
+            const resposta = await fetch(url, option);
+            const dados = await resposta.json();
+            document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
+        }
+
+        // PUT para atualizar recurso
+        async function exemploPUT() {
+            let url2 = url + "/123";
+            const option = {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ "id": 1, "status": "Enabled" })
+            }
+            document.getElementById("request").textContent = `url=${url2}\n` + JSON.stringify(option, null, 2);
+            document.getElementById("response").textContent = "";
+
+            const resposta = await fetch(url2, option);
+            const dados = await resposta.json();
+            document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
+        }
+
+        // PATCH para atualizar parcialmente
+        async function exemploPATCH() {
+            let url2 = url + "/123";
+            const option = {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify( { "name": "name changed to Jack" })
+            }
+            document.getElementById("request").textContent = `url=${url2}\n` + JSON.stringify(option, null, 2);
+            document.getElementById("response").textContent = "";
+
+            const resposta = await fetch(url2, option);
+            const dados = await resposta.json();
+            document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
+        }
+
+        // DELETE para remover recurso
+        async function exemploDELETE() {
+            let url2 = url + "/123";
+            const option = {
+                method: "DELETE",
+            }
+            document.getElementById("request").textContent = `url=${url2}\n` + JSON.stringify(option, null, 2);
+            document.getElementById("response").textContent = "";
+
+            const resposta = await fetch(url2, option);
+            const dados = await resposta.json();
+            document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
+        }
+
+
+</script>
 
     <br><br><hr><br><br>
 
+    <label>📡 Métodos HTTP e o que enviam</label>
+    <br><br>
+    <table border="1">
+        <header>
+            <tr><th>Método</th><th>Onde os dados vão</th><th>Exemplo</th></tr>
+        </header>
+        <body>
+            <tr><td><b>GET</b></td><td>Dados são enviados na <b>URL</b> como <i>query string</i> (<code>?chave1=valor1[&chave2=valor2...]</code>). Não tem corpo.</td><td><code>GET /api/users?name=John&age=30</code></td></tr>
+            <tr><td><b>POST</b></td><td>Dados são enviados no <b>corpo da requisição</b>. Usado para criar recursos ou enviar payloads maiores (JSON, formulário, etc.).</td><td>Body: <code>{ "message": "Hello World!" }</code></td></tr>
+            <tr><td><b>PUT</b></td><td>Também envia dados no <b>corpo</b>, mas a intenção é <b>substituir</b> ou atualizar completamente um recurso existente.</td><td>Body: <code>{ "id": 1, "status": "Enabled" }</code></td></tr>
+            <tr><td><b>PATCH</b></td><td>Envia dados no <b>corpo</b>, mas serve para <b>atualizar parcialmente</b> um recurso.</td><td>Body: <code>{ "name": "name changed to Jack" }</code></td></tr>
+            <tr><td><b>DELETE</b></td><td>Normalmente não tem corpo; identifica o recurso a ser removido pela URL ou query string.</td><td><code>DELETE /api/users/123</code></td></tr>
+            <tr><td><b>HEAD</b></td><td>Igual ao GET, mas retorna apenas os <b>headers</b> da resposta, sem corpo.</td><td><code>HEAD /api/users</code></td></tr>
+            <tr><td><b>OPTIONS</b></td><td>Usado para descobrir quais métodos e cabeçalhos são permitidos em um endpoint.</td><td><code>OPTIONS /api/users</code></td></tr>
+        </body>
+    </table>
 
-  <label>URL da API:</label>
-  <input type="text" id="apiUrl" value="https://api-simulator-vercel-servless.vercel.app/api/simulador" style="width: 300px;">
+    <!--https://www.httprequest.net/pt/-->
 
-  <br><br>
-  <button onclick="testarGET()">Testar GET com Query Params</button>
-  <button onclick="testarPOST()">Testar POST com Payload</button>
-
-    <script>
-    async function testarGET() {
-      const url = document.getElementById("apiUrl").value;
-      const resposta = await fetch(url + "?nome=Giba&idade=30", {
-        method: "GET"
-      });
-      const dados = await resposta.json();
-      document.getElementById("saida").textContent =
-        JSON.stringify(dados, null, 2);
-    }
-
-    async function testarPOST() {
-      const url = document.getElementById("apiUrl").value;
-      const resposta = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mensagem: "Olá Vercel!", ativo: true })
-      });
-      const dados = await resposta.json();
-      document.getElementById("saida").textContent =
-        JSON.stringify(dados, null, 2);
-    }
-  </script>
-  
 </body>
 
 </html>
