@@ -64,6 +64,9 @@
 <body>
     <h1>HTTP Request Simulator</h1>
 
+
+
+
     <div class="form-container">
 
         <div class="form-item">
@@ -81,8 +84,20 @@
 
         <div class="form-item">
             <label>URL da API:</label>
-            <input type="text" id="apiUrl" value="https://api-simulator-vercel-servless.vercel.app/api/simulador" style="width: 300px;">
+            <div class="inputdropdown">
+                <input type="text" id="apiUrl" placeholder="Digite ou escolha..." style="width: 500px;">
+                <span class="arrow" onclick="toggleDropdown()">▼</span>
+                <div class="dropdown" id="apiUrlList">
+                    <div>https://api-simulator-vercel-servless.vercel.app/api/simulador</div>
+                    <div>https://tueko.com.br/tools/globals.php</div>
+                </div>
+            </div>
         </div>
+
+        <!--div class="form-item">
+            <label>URL da API:</label>
+            <input type="text" id="apiUrl" value="https://api-simulator-vercel-servless.vercel.app/api/simulador" style="width: 500px;">
+        </div-->
 
         <button onclick="doRequest()">Enviar Requisição</button>
 
@@ -95,23 +110,25 @@
 
     </div>
 
+    <div id="body" style="display: none;">
+        <h4>Payload (JSON):</h4>
+        <textarea id="payload">{ "mensagem": "Olá API" }</textarea>
+    </div>
+
     <h4>Request:</h4>
     <pre id="request"></pre>
 
     <h4>Response:</h4>
     <pre id="response"></pre>
 
-    <hr>
-
-    <br><br>
-
-    <label>Payload (JSON):</label>
-    <textarea id="payload">{ "mensagem": "Olá API" }</textarea>
-
     <script>
-        const url = document.getElementById("apiUrl").value;
+        let url = document.getElementById("apiUrl").value;
 
         async function doRequest() {
+            let url = document.getElementById("apiUrl").value;
+            document.getElementById("request").textContent = "";
+            document.getElementById("response").textContent = "";
+
             const method = document.getElementById("method").value;
             const payloadText = document.getElementById("payload").value;
             let payloadObj = null;
@@ -128,12 +145,16 @@
             if (!['GET','HEAD'].includes(method)) {
                 option["body"] = JSON.stringify(payloadText);
             }
-            document.getElementById("request").textContent = JSON.stringify(option, null, 2);
-            document.getElementById("response").textContent = "";
+            document.getElementById("request").textContent = `url=${url}\n` + JSON.stringify(option, null, 2);
 
-            const resposta = await fetch(url, option);
-            const dados = await resposta.json();
-            document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
+            try {
+                const resposta = await fetch(url, option);
+                const dados = await resposta.json();
+                document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
+            } catch(e) {
+                document.getElementById("response").textContent = e;
+
+            }
 
         }
 
@@ -213,6 +234,15 @@
             document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
         }
 
+        // evento quando seleciona um novo metodo
+        document.getElementById("method").addEventListener("change", function() {
+            const method = this.value;
+            if (['GET','HEAD'].includes(method)) {
+                document.getElementById("body").style.display = "none";
+            } else {
+                document.getElementById("body").style.display = "block";
+            }
+        });
 
 </script>
 
@@ -236,6 +266,86 @@
     </table>
 
     <!--https://www.httprequest.net/pt/-->
+
+    <!-- ---------------------------------------------------------------------------- -->    
+
+    <style>
+
+        /* input + dropdown customizado */
+
+        .inputdropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .inputdropdown input {
+            --padding: 6px;
+            --font-size: 14px;
+            --width: 200px;
+        }
+
+        .arrow {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            font-size: 18px;
+            user-select: none;
+        }
+
+        .dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            border: 1px solid #ccc;
+            background: #fff;
+            display: none;
+            max-height: 120px;
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        .dropdown div {
+            padding: 6px;
+            cursor: pointer;
+        }
+
+        .dropdown div:hover {
+            background: #eee;
+        }
+
+    </style>
+
+    <script>
+
+        // input + dropdown customizado 
+
+        const input = document.getElementById("apiUrl");
+        const dropdown = document.getElementById("apiUrlList");
+
+        function toggleDropdown() {
+            dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+        }
+
+        // Ao clicar em uma opção
+        dropdown.querySelectorAll("div").forEach(item => {
+            item.addEventListener("click", () => {
+                input.value = item.textContent; // move valor para input
+                dropdown.style.display = "none"; // recolhe lista
+            });
+        });
+
+        // Fecha dropdown se clicar fora
+        document.addEventListener("click", (e) => {
+            if (!e.target.closest(".inputdropdown")) {
+                dropdown.style.display = "none";
+            }
+        });
+    </script>
+
+    <!-- ---------------------------------------------------------------------------- -->    
 
 </body>
 
