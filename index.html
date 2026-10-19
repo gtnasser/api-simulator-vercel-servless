@@ -4,106 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <title>HTTP Request</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif; 
-            margin: 10px; 
-            font-size: .75rem;
-        }
-
-        textarea { 
-            width: 100%; height: 100px; 
-        }
-        pre { 
-            background: #f4f4f4; 
-            border: 1px solid #ccc; 
-            padding: 10px; 
-            min-height: 100px; 
-        }
-        code { 
-            background: #f4f4f4; 
-            border: 1px solid #ccc; 
-        }
-
-        /* toolbar */ 
-
-        .form-container {
-            display: flex;
-            justify-content: flex-start; /* alinha à esquerda */
-            align-items:center;
-            gap: 10px;
-            padding: 10px 0;
-        }
-
-        .form-item {
-            display: flex;
-            flex-direction: column; /* para label acima do elemento */
-        }
-
-        label {
-            font-weight: bold;
-            margin-bottom: 3px;
-        }
-
-        select, input, th, td {
-            padding: 4px;
-        }
-
-        .form-container button {
-            padding: 10px 20px;
-            border: none;
-            background-color: #0056b3;
-            color: white;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        .form-container button button:hover {
-            background-color: #007BFF;
-        }
-
-        /* overlay spinner */
-
-        #overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5); /* fundo opaco */
-            display: none; /* escondido por padrão */
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-
-        #overlay .spinner {
-            width: 50px;
-            height: 50px;
-            border: 6px solid #fff;
-            border-top: 6px solid #3498db;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        #overlay .message {
-            margin-left: 20px;
-            font-size: 18px;
-            font-weight: bold;
-            color: #fff;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-
-    </style>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js"></script>
 </head>
 
 <body>
 
-    <!-- Overlay -->
+    <!-- Overlay Spinner -->
 
     <div id="overlay">
         <div class="spinner"></div>
@@ -117,8 +24,8 @@
     <div class="form-container">
 
         <div class="form-item">
-            <label for="method">Método HTTP:</label>
-            <select id="method">
+            <label for="selMethod">Método HTTP:</label>
+            <select id="selMethod">
                 <option>GET</option>
                 <option>POST</option>
                 <option>PUT</option>
@@ -132,16 +39,16 @@
         <div class="form-item">
             <label>URL da API:</label>
             <div class="inputdropdown">
-                <input type="text" id="apiUrl" placeholder="Digite ou escolha..." style="width: 500px;">
-                <span class="arrow" onclick="toggleDropdown()">▼</span>
+                <input type="text" id="apiUrl" placeholder="Digite ou escolha..." style="width: 450px;">
+                <span class="arrow">▼</span>
                 <div class="dropdown" id="apiUrlList">
                     <div>https://api-simulator-vercel-servless.vercel.app/api/simulador</div>
-                    <div>https://tueko.com.br/tools/globals.php</div>
+                    <div>https://turko.com.br/tools/globals.php</div>
                 </div>
             </div>
         </div>
 
-        <button onclick="doRequest()">Enviar Requisição</button>
+        <button id="btnRequest">Enviar Requisição</button>
 
         <span>Exemplos:</span>
         <button onclick="exemploGET()">GET</button>
@@ -149,65 +56,9 @@
         <button onclick="exemploPUT()">PUT</button>
         <button onclick="exemploPATCH()">PATCH</button>
         <button onclick="exemploDELETE()">DELETE</button>
-
-        <button id="teste">teste</button>
-    </div>
-
-    <!-- content -->
-
-    <div id="body" style="display: none;">
-        <h4>Payload (JSON):</h4>
-        <textarea id="payload">{ "mensagem": "Olá API" }</textarea>
-    </div>
-
-    <h4>Request:</h4>
-    <pre id="request"></pre>
-
-    <h4>Response:</h4>
-    <pre id="response"></pre>
+        <button onclick="window.open('https://www.httprequest.net/pt/', '_blank');">#1</button>
 
     <script>
-
-        async function doRequest() {
-
-            // prepare data
-            let url = document.getElementById("apiUrl").value;
-            document.getElementById("request").textContent = "";
-            document.getElementById("response").textContent = "";
-
-            const method = document.getElementById("method").value;
-            const payloadText = document.getElementById("payload").value;
-            let payloadObj = null;
-            try {
-                payloadObj = payloadText ? JSON.parse(payloadText) : null;
-            } catch (e) {
-                payloadObj = { erro: "Payload inválido, não é JSON válido." };
-            }
-
-            const option = {
-                method: method,
-                headers: { "Content-Type": "application/json" },
-            }
-            if (!['GET','HEAD'].includes(method)) {
-                option["body"] = JSON.stringify(payloadText);
-            }
-            document.getElementById("request").textContent = `url=${url}\n` + JSON.stringify(option, null, 2);
-
-            // do fetch
-            try {
-                const overlay = document.getElementById("overlay");
-                overlay.style.display = "flex";
-                const resposta = await fetch(url, option);
-                const dados = await resposta.json();
-                document.getElementById("response").textContent = JSON.stringify(dados, null, 2);
-            } catch(e) {
-                document.getElementById("response").textContent = e;
-            } finally {
-                overlay.style.display = "none";
-            }
-
-        }
-
 
         // GET
         async function exemploGET() {
@@ -346,43 +197,64 @@
             }
         }
 
-        // evento quando seleciona um novo metodo
-        document.getElementById("method").addEventListener("change", function() {
-            const method = this.value;
-            if (['GET','HEAD'].includes(method)) {
-                document.getElementById("body").style.display = "none";
-            } else {
-                document.getElementById("body").style.display = "block";
-            }
-        });
+        </script>
 
-        // overlay spinner
+        <button id="teste" style="display: none;">teste</button>
+    </div>
 
-        const btn = document.getElementById("teste");
-        const overlay = document.getElementById("overlay");
+    <!--https://www.httprequest.net/pt/-->
 
-        btn.addEventListener("click", async () => {
-            // Mostra overlay
-            overlay.style.display = "flex";
+    <!-- ---------------------------------------------------------------------------- -->    
 
-            try {
-                // Simula requisição (2 segundos)
-                await new Promise(resolve => setTimeout(resolve, 2000));
-            } catch (err) {
-                alert("Erro na requisição!");
-            } finally {
+    <!-- content -->
 
-            // Esconde overlay
-            overlay.style.display = "none";
-            }
-        });
+    <div id="body" style="display: none;">
+        <h3>Payload (JSON):</h3>
+        <textarea id="payload">{ "mensagem": "Olá API" }</textarea>
+    </div>
 
-    </script>
+
+    <h3>Parameters</h>
+    <table id="tabParameters" class="keyval">
+        <thead>
+            <tr>
+                <th width="45%">Chave</th>
+                <th width="45%">Valor</th>
+                <th width="10%">Ação</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+    <button id="btnAddParameter" class="btnAdd">+ Parâmetro</button>
+
+
+    <h3>Headers</h3>
+    <table id="tabHeaders" class="keyval">
+        <thead>
+            <tr>
+                <th width="45%">Chave</th>
+                <th width="45%">Valor</th>
+                <th width="10%">Ação</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+    <button id="btnAddHeader" class="btnAdd">+ Header</button>
+
+    <br><br><hr>
+
+    <h3>Request:</h3>
+    <pre id="request"></pre>
+
+    <h3>Response:</h3>
+    <pre id="response"></pre>
+
 
     <br><br><hr><br><br>
 
-    <label>📡 Métodos HTTP e o que enviam</label>
-    <br><br>
+    <h3>📡 Métodos HTTP e o que enviam</h3>
     <table border="1">
         <header>
             <tr><th>Método</th><th>Onde os dados vão</th><th>Exemplo</th></tr>
@@ -398,87 +270,6 @@
         </body>
     </table>
 
-    <!--https://www.httprequest.net/pt/-->
-
-    <!-- ---------------------------------------------------------------------------- -->    
-
-    <style>
-
-        /* input + dropdown customizado */
-
-        .inputdropdown {
-            position: relative;
-            display: inline-block;
-        }
-
-        .inputdropdown input {
-            --padding: 6px;
-            --font-size: 14px;
-            --width: 200px;
-        }
-
-        .arrow {
-            position: absolute;
-            right: 5px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            font-size: 18px;
-            user-select: none;
-        }
-
-        .dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            width: 100%;
-            border: 1px solid #ccc;
-            background: #fff;
-            display: none;
-            max-height: 120px;
-            overflow-y: auto;
-            z-index: 10;
-        }
-
-        .dropdown div {
-            padding: 6px;
-            cursor: pointer;
-        }
-
-        .dropdown div:hover {
-            background: #eee;
-        }
-
-    </style>
-
-    <script>
-
-        // input + dropdown customizado 
-
-        const input = document.getElementById("apiUrl");
-        const dropdown = document.getElementById("apiUrlList");
-
-        function toggleDropdown() {
-            dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
-        }
-
-        // Ao clicar em uma opção
-        dropdown.querySelectorAll("div").forEach(item => {
-            item.addEventListener("click", () => {
-                input.value = item.textContent; // move valor para input
-                dropdown.style.display = "none"; // recolhe lista
-            });
-        });
-
-        // Fecha dropdown se clicar fora
-        document.addEventListener("click", (e) => {
-            if (!e.target.closest(".inputdropdown")) {
-                dropdown.style.display = "none";
-            }
-        });
-    </script>
-
-    <!-- ---------------------------------------------------------------------------- -->    
 
 </body>
 
